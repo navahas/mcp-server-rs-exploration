@@ -1,0 +1,19 @@
+{
+  "tools": [
+    {
+      "name": "math",
+      "description": "Math utility",
+      "methods": {
+        "add": {
+          "description": "Adds a list of numbers",
+          "args": ["number"]
+        }
+      }
+    }
+  ],
+  "transport": {
+    "type": "tcp",
+    "host": "127.0.0.1",
+    "port": 3333
+  }
+}
