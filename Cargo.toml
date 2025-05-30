@@ -5,11 +5,7 @@ edition = "2024"
 
 [[bin]]
 name = "stdio"
-path = "src/stdio.rs"
-
-[[bin]]
-name = "stremeable"
-path = "src/stremeable.rs"
+path = "src/bin/stdio.rs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

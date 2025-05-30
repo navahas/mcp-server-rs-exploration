@@ -6,8 +6,8 @@ mkdir -p ./bin
 
 build_and_copy() {
     local b=$1
-    if [[ ! -f "src/$b.rs" ]]; then
-        echo "error: src/$b.rs not found, unable to build bin"
+    if [[ ! -f "src/bin/$b.rs" ]]; then
+        echo "error: src/bin/$b.rs not found, unable to build bin"
         return
     fi
 
@@ -17,7 +17,7 @@ build_and_copy() {
 }
 
 if [[ -z $bin ]]; then
-    for file in src/*.rs; do
+    for file in src/bin/*.rs; do
         bname=$(basename "$file" .rs)
         build_and_copy "$bname"
     done
