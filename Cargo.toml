@@ -7,6 +7,10 @@ edition = "2024"
 name = "stdio"
 path = "src/stdio.rs"
 
+[[bin]]
+name = "stremeable"
+path = "src/stremeable.rs"
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
