@@ -1,3 +1,6 @@
+mod features;
+use features::{tools, prompts, resources, utilities};
+
 use std::io::{self, BufRead, Write};
 use serde_json::{Value, json};
 
@@ -50,79 +53,81 @@ fn main() -> io::Result<()> {
                 })
             }
 
-            "tools/list" => {
-                json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "result": {
-                        "tools": [
-                            {
-                                "name": "add_numbers",
-                                "description": "Add a list of numbers together",
-                                "inputSchema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "numbers": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "number"
-                                            },
-                                            "description": "Array of numbers to add"
-                                        }
-                                    },
-                                    "required": ["numbers"]
-                                }
-                            },
-                            {
-                                "name": "echo_text",
-                                "description": "Echo back the provided text",
-                                "inputSchema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "text": {
-                                            "type": "string",
-                                            "description": "Text to echo back"
-                                        }
-                                    },
-                                    "required": ["text"]
-                                }
-                            },
-                            {
-                                "name": "reverse_string",
-                                "description": "Reverse the characters in a string",
-                                "inputSchema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "text": {
-                                            "type": "string",
-                                            "description": "String to reverse"
-                                        }
-                                    },
-                                    "required": ["text"]
-                                }
-                            }
-                        ]
-                    }
-                })
-            }
-
-            "resources/list" => {
-                json!({
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "result": {
-                        "resources": []
-                    }
-                })
-            }
-
             "prompts/list" => {
                 json!({
                     "jsonrpc": "2.0",
                     "id": id,
-                    "result": {
-                        "prompts": []
-                    }
+                    "result": prompts::list_prompts()
+                })
+            }
+
+            "prompts/call" => {
+                let prompt_name = req.get("params")
+                    .and_then(|p| p.get("name"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+
+                let arguments = req.get("params")
+                    .and_then(|p| p.get("arguments"))
+                    .cloned()
+                    .unwrap_or(json!({}));
+
+                let result = prompts::call_prompt(prompt_name, &arguments);
+
+                if result.get("error").is_some() {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "error": result["error"]
+                    })
+                } else {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    })
+                }
+            }
+
+            "resources/list" => {
+                let cursor = req.get("params")
+                    .and_then(|p| p.get("cursor"))
+                    .and_then(Value::as_str)
+                    .map(|s| s.to_string());
+
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": resources::list_resources(cursor)
+                })
+            }
+
+            "resources/read" => {
+                let uri = req.get("params")
+                    .and_then(|p| p.get("uri"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": resources::read_resource(uri)
+                })
+            }
+
+            "resources/templates/list" => {
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": resources::list_resource_templates()
+                })
+            }
+
+            "tools/list" => {
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": tools::list_tools()
                 })
             }
 
@@ -131,86 +136,72 @@ fn main() -> io::Result<()> {
                     .and_then(|p| p.get("name"))
                     .and_then(Value::as_str)
                     .unwrap_or("");
-                
+
                 let arguments = req.get("params")
                     .and_then(|p| p.get("arguments"))
                     .cloned()
                     .unwrap_or(json!({}));
 
-                match tool_name {
-                    "add_numbers" => {
-                        let sum: i64 = req.get("params")
-                            .and_then(Value::as_array)
-                            .unwrap_or(&vec![])
-                            .iter()
-                            .filter_map(Value::as_i64)
-                            .sum();
-                        
-                        json!({
-                            "jsonrpc": "2.0",
-                            "id": id,
-                            "result": {
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": format!("The sum is: {}", sum)
-                                    }
-                                ]
-                            }
-                        })
-                    }
-                    
-                    "echo_text" => {
-                        let text = arguments.get("text")
-                            .and_then(Value::as_str)
-                            .unwrap_or("");
-                        
-                        json!({
-                            "jsonrpc": "2.0",
-                            "id": id,
-                            "result": {
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": text
-                                    }
-                                ]
-                            }
-                        })
-                    }
-                    
-                    "reverse_string" => {
-                        let text = arguments.get("text")
-                            .and_then(Value::as_str)
-                            .unwrap_or("");
-                        
-                        let reversed: String = text.chars().rev().collect();
-                        
-                        json!({
-                            "jsonrpc": "2.0",
-                            "id": id,
-                            "result": {
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": reversed
-                                    }
-                                ]
-                            }
-                        })
-                    }
-                    
-                    _ => {
-                        json!({
-                            "jsonrpc": "2.0",
-                            "id": id,
-                            "error": {
-                                "code": -32601,
-                                "message": format!("Tool not found: {}", tool_name)
-                            }
-                        })
-                    }
+                let result = tools::call_tool(tool_name, &arguments);
+
+                if result.get("error").is_some() {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "error": result["error"]
+                    })
+                } else {
+                    json!({
+                        "jsonrpc": "2.0",
+                        "id": id,
+                        "result": result
+                    })
                 }
+            }
+
+            "completion/complete" => {
+                let ref_type = req.get("params")
+                    .and_then(|p| p.get("ref"))
+                    .and_then(|r| r.get("type"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+
+                let name_or_uri = req.get("params")
+                    .and_then(|p| p.get("ref"))
+                    .and_then(|r| r.get("name").or_else(|| r.get("uri")))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+
+                let argument_name = req.get("params")
+                    .and_then(|p| p.get("argument"))
+                    .and_then(|a| a.get("name"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+
+                let argument_value = req.get("params")
+                    .and_then(|p| p.get("argument"))
+                    .and_then(|a| a.get("value"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": utilities::completion::complete(ref_type, name_or_uri, argument_name, argument_value)
+                })
+            }
+
+            "logging/setLevel" => {
+                let level = req.get("params")
+                    .and_then(|p| p.get("level"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("info");
+
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": utilities::logging::set_log_level(level)
+                })
             }
 
             "shutdown" => {
