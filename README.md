@@ -5,9 +5,11 @@ This project is an exploration of the latest MCP specification revision:
 
 ## Building the Server
 
-To build the server binary:
+To build servers binary:
 
-```sh cargo build --release && cp ./target/release/stdio ./stdio ```
+```
+./build.sh
+```
 
 ## Integrating with Claude Desktop
 
@@ -18,7 +20,7 @@ Desktop configuration:
 {
     "mcpServers": {
         "rust_math_server": {
-            "command": "$PATH/TO/mcp-server-rs-exploration/stdio",
+            "command": "$PATH/TO/mcp-server-rs-exploration/bin/stdio",
                 "args": []
         }
     }
